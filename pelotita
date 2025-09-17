@@ -1,0 +1,85 @@
+import cv2 as cv  # Para usar funciones de imágenes y mostrar ventanas
+import numpy as np  # Para crear imágenes y hacer operaciones con arreglos (matrices)
+
+# Creamos una imagen en blanco (fondo blanco de 500x500 pixeles)
+img = np.ones((500, 500, 3), dtype=np.uint8) * 255
+
+# Posición inicial de la pelotita 1 (la que rebota)
+x1, y1 = 50, 50
+dx1, dy1 = 4, 4  # Dirección de movimiento en X y Y
+
+# Posición inicial de la pelotita 2 (la que esquiva)
+x2, y2 = 400, 400
+
+# Tamaño del radio de las pelotas
+radio = 20
+
+while True:
+    # Limpiamos el fondo en cada frame (para que no se vea la estela)
+    img = np.ones((500, 500, 3), dtype=np.uint8) * 255
+
+    # ---------------------------
+    # LÓGICA DE LA PRIMERA BOLA (rebota)
+    # ---------------------------
+
+    # Actualizamos posición
+    x1 += dx1
+    y1 += dy1
+
+    # Si choca contra los bordes, invertimos dirección
+    if x1 - radio <= 0 or x1 + radio >= 500:
+        dx1 *= -1  # Rebotar en horizontal
+    if y1 - radio <= 0 or y1 + radio >= 500:
+        dy1 *= -1  # Rebotar en vertical
+
+    # ---------------------------
+    # LÓGICA DE LA SEGUNDA BOLA (esquiva)
+    # ---------------------------
+
+    # Calculamos distancia entre las dos bolas
+    distancia_x = x2 - x1
+    distancia_y = y2 - y1
+
+    # Si la primera bola está muy cerca, la segunda se mueve en dirección contraria
+    if abs(distancia_x) < 100 and abs(distancia_y) < 100:
+        # Moverse en la dirección opuesta
+        if distancia_x < 0:
+            x2 += 3
+        else:
+            x2 -= 3
+
+        if distancia_y < 0:
+            y2 += 3
+        else:
+            y2 -= 3
+
+    # Limitar los bordes para que la bola 2 no se salga
+    x2 = max(radio, min(500 - radio, x2))
+    y2 = max(radio, min(500 - radio, y2))
+
+    # ---------------------------
+    # DIBUJAR LAS BOLAS
+    # ---------------------------
+
+    # Bola 1 en color verde
+    cv.circle(img, (x1, y1), radio, (0, 255, 0), -1)
+    # Escribimos sus coordenadas al lado derecho (x1 + radio + 5, y1)
+    cv.putText(img, f'({x1}, {y1})', (x1 + radio + 5, y1), cv.FONT_HERSHEY_SIMPLEX,
+               0.5, (0, 128, 0), 1, cv.LINE_AA)
+
+    # Bola 2 en color rojo
+    cv.circle(img, (x2, y2), radio, (0, 0, 255), -1)
+    # Escribimos sus coordenadas al lado derecho (x2 + radio + 5, y2)
+    cv.putText(img, f'({x2}, {y2})', (x2 + radio + 5, y2), cv.FONT_HERSHEY_SIMPLEX,
+               0.5, (0, 0, 128), 1, cv.LINE_AA)
+
+    # Mostramos la imagen en una ventana
+    cv.imshow('Pelotitas con coordenadas', img)
+
+    # Esperamos 30 milisegundos entre frames
+    key = cv.waitKey(30)
+    if key == ord('q'):  # Si presionas la tecla 'q' se cierra el programa
+        break
+
+# Cerramos todas las ventanas cuando acaba el ciclo
+cv.destroyAllWindows()
