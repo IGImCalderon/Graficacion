@@ -1,0 +1,50 @@
+import cv2 as cv
+import numpy as np
+
+# Clasificador Haar de rostro
+rostro = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_alt2.xml")
+
+# Abrir cámara
+cap = cv.VideoCapture(0, cv.CAP_DSHOW)
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        continue  # si falla la cámara, sigue al siguiente ciclo
+
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    rostros = rostro.detectMultiScale(gray, 1.3, 5)
+
+    for (x, y, w, h) in rostros:
+        cv.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+        # Ojos
+        eye_y = int(h/4)
+        eye_x1 = int(w/4)
+        eye_x2 = int(3*w/4)
+        cv.circle(frame, (x+eye_x1, y+eye_y), 10, (255,0,0), 2)
+        cv.circle(frame, (x+eye_x2, y+eye_y), 10, (255,0,0), 2)
+
+        # Nariz
+        nose_w, nose_h = int(w/5), int(h/6)
+        cv.rectangle(frame, (x + w//2 - nose_w//2, y + h//2 - nose_h//2),
+                             (x + w//2 + nose_w//2, y + h//2 + nose_h//2), (0,0,255), 2)
+
+        # Boca
+        mouth_w, mouth_h = int(w/2.5), int(h/8)
+        cv.rectangle(frame, (x + w//2 - mouth_w//2, y + int(3*h/4) - mouth_h//2),
+                             (x + w//2 + mouth_w//2, y + int(3*h/4) + mouth_h//2), (0,255,255), 2)
+
+        # Sombrero (triángulo rojo)
+        pt1 = (x, y)  # esquina izquierda
+        pt2 = (x + w, y)  # esquina derecha
+        pt3 = (x + w//2, max(0, y - h//2))  # punta del triángulo, no menor que 0
+        cv.drawContours(frame, [np.array([pt1, pt2, pt3])], 0, (0,0,255), -1)
+
+    cv.imshow("Rostro con sombrero simple", frame)
+
+    if cv.waitKey(1) & 0xFF == 27:  # ESC para salir
+        break
+
+cap.release()
+cv.destroyAllWindows()
