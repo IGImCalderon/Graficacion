@@ -1,0 +1,47 @@
+import cv2 as cv
+import numpy as np
+
+# Leer imagen original
+img = cv.imread('download.jpeg')
+if img is None:
+    print("No se pudo abrir la imagen.")
+    exit()
+
+# Dimensiones originales
+h, w, c = img.shape
+
+# Escala (por ejemplo, duplicar)
+scale = 2
+new_h, new_w = int(h * scale), int(w * scale)
+
+# Crear imagen vacía
+img_bilineal = np.zeros((new_h, new_w, c), dtype=np.uint8)
+
+# Aplicar interpolación bilineal manual
+for i in range(new_h):
+    for j in range(new_w):
+        # Coordenadas del píxel original
+        x = i / scale
+        y = j / scale
+
+        x0 = int(x)
+        y0 = int(y)
+        x1 = min(x0 + 1, h - 1)
+        y1 = min(y0 + 1, w - 1)
+
+        dx = x - x0
+        dy = y - y0
+
+        # Interpolación bilineal
+        top = (1 - dy) * img[x0, y0] + dy * img[x0, y1]
+        bottom = (1 - dy) * img[x1, y0] + dy * img[x1, y1]
+        pixel = (1 - dx) * top + dx * bottom
+
+        img_bilineal[i, j] = pixel
+
+# Mostrar ambas imágenes
+cv.imshow('Original', img)
+cv.imshow('Escalada Bilineal', img_bilineal)
+
+cv.waitKey(0)
+cv.destroyAllWindows()
