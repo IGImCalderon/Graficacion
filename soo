@@ -1,0 +1,86 @@
+import cv2
+import numpy as np
+import random
+import threading
+import os
+
+# Configuración
+TAMANO_IMAGEN = 20
+CANTIDAD_IMAGENES = 5
+ANCHO_PIZARRA = 400
+ALTO_PIZARRA = 400
+IMAGEN_REFERENCIA = "download.jpeg"
+
+def crear_imagen_objeto(path):
+    # Si existe la imagen, solo la cargamos y redimensionamos
+    if os.path.exists(path):
+        img = cv2.imread(path)
+    else:
+        # Si no existe, creamos una imagen roja con una cruz
+        img = np.zeros((TAMANO_IMAGEN, TAMANO_IMAGEN, 3), dtype=np.uint8)
+        img[:] = (0, 0, 255)  # Fondo rojo
+        centro = TAMANO_IMAGEN // 2
+        img[centro-2:centro+2, :] = 255
+        img[:, centro-2:centro+2] = 255
+        cv2.imwrite(path, img)
+
+    return cv2.resize(img, (TAMANO_IMAGEN, TAMANO_IMAGEN))
+
+def crear_pizarra_con_imagenes(objeto):
+    # Crear pizarra negra
+    pizarra = np.zeros((ALTO_PIZARRA, ANCHO_PIZARRA, 3), dtype=np.uint8)
+    posiciones = []
+
+    # Poner las imágenes en posiciones aleatorias
+    for i in range(CANTIDAD_IMAGENES):
+        x = random.randint(0, ANCHO_PIZARRA - TAMANO_IMAGEN)
+        y = random.randint(0, ALTO_PIZARRA - TAMANO_IMAGEN)
+        posiciones.append((x, y))
+        pizarra[y:y+TAMANO_IMAGEN, x:x+TAMANO_IMAGEN] = objeto
+
+    return pizarra, posiciones
+
+def buscar_imagenes(pizarra, objeto):
+    # Buscar las imágenes con template matching
+    resultado = cv2.matchTemplate(pizarra, objeto, cv2.TM_CCOEFF_NORMED)
+    umbral = 0.9
+    loc = np.where(resultado >= umbral)
+
+    # Dibujar cuadros verdes en las coincidencias
+    pizarra_res = pizarra.copy()
+    coincidencias = []
+    for pt in zip(*loc[::-1]):
+        # Evitar cuadros muy pegados
+        solapado = False
+        for (x, y) in coincidencias:
+            if abs(pt[0]-x) < TAMANO_IMAGEN and abs(pt[1]-y) < TAMANO_IMAGEN:
+                solapado = True
+                break
+        if not solapado:
+            coincidencias.append(pt)
+            cv2.rectangle(pizarra_res, pt, (pt[0]+TAMANO_IMAGEN, pt[1]+TAMANO_IMAGEN), (0,255,0), 2)
+        if len(coincidencias) >= CANTIDAD_IMAGENES:
+            break
+
+    return pizarra_res, coincidencias
+
+def main():
+    objeto = crear_imagen_objeto(IMAGEN_REFERENCIA)
+    pizarra, posiciones = crear_pizarra_con_imagenes(objeto)
+    print("Posiciones reales:", posiciones)
+
+    def buscar():
+        re}sultado, encontradas = buscar_imagenes(pizarra, objeto)
+        cv2.imshow("Pizarra Original", pizarra)
+        cv2.imshow("Resultado", resultado)
+        cv2.imwrite("resultado_busqueda.png", resultado)
+        print("Encontradas:", len(encontradas), "de", CANTIDAD_IMAGENES)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    # Usamos hilo para no trabar la ventana
+    t = threading.Thread(target=buscar)
+    t.start()
+
+if __name__ == "__main__":
+    main()

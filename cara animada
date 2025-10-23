@@ -1,0 +1,66 @@
+import cv2 as cv   # Para captura de video y dibujo
+import numpy as np # Para manejo de matrices
+
+# --- 08/10/25: Animación de pupilas y lengua sobre rostro detectado ---
+
+# Cargar clasificador de rostros Haar Cascade
+clasificador_rostro = cv.CascadeClassifier('haarcascade_frontalface_alt.xml')
+
+# Abrir cámara principal
+camara = cv.VideoCapture(0)
+
+# Variables para animación
+contador_frame = 0
+direccion_pupila = 1     # Dirección inicial del movimiento de pupilas
+offset_pupila = 0        # Desplazamiento actual de pupilas
+max_offset_pupila = 8    # Límite del movimiento de las pupilas
+
+# Bucle principal
+while True:
+    ret, frame = camara.read()
+    if not ret:
+        break
+
+    # Convertir a gris para mejorar detección
+    gris = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+
+    # Detectar rostros
+    rostros = clasificador_rostro.detectMultiScale(gris, 1.3, 5)
+
+    for (x, y, w, h) in rostros:
+        # --- DIBUJOS DEL ROSTRO ---
+        
+        # Rectángulo rojo alrededor del rostro
+        cv.rectangle(frame, (x, y), (x + w, y + h), (234, 23, 23), 5)
+
+        # Rectángulo verde aproximando la boca
+        cv.rectangle(frame, (x, y + h//2), (x + w, y + h), (0, 255, 0), 5)
+
+        # Ojos (contorno negro + relleno blanco)
+        ojos = [(x + int(w*0.3), y + int(h*0.4)), (x + int(w*0.7), y + int(h*0.4))]
+        for ox, oy in ojos:
+            cv.circle(frame, (ox, oy), 21, (0, 0, 0), 2)    # borde
+            cv.circle(frame, (ox, oy), 20, (255, 255, 255), -1)  # relleno
+
+        # --- ANIMACIÓN DE PUPILAS ---
+        offset_pupila += direccion_pupila * 0.5
+        if offset_pupila >= max_offset_pupila:
+            direccion_pupila = -1
+        elif offset_pupila <= -max_offset_pupila:
+            direccion_pupila = 1
+
+        for ox, oy in ojos:
+            cv.circle(frame, (ox + int(offset_pupila), oy), 5, (0, 0, 255), -1)
+
+        # Aquí se podría agregar animación de lengua o más elementos
+
+    # Mostrar resultado
+    cv.imshow('Rostro Animado', frame)
+
+    # Salir con ESC
+    if cv.waitKey(1) & 0xFF == 27:
+        break
+
+# Liberar cámara y cerrar ventanas
+camara.release()
+cv.destroyAllWindows()

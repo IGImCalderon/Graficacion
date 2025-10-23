@@ -1,0 +1,31 @@
+import cv2 as cv
+import numpy as np
+
+# --- CARGAR IMAGEN EN ESCALA DE GRISES ---
+imagen = cv.imread('tr.png', 0)
+
+# Obtener dimensiones de la imagen
+alto, ancho = imagen.shape
+
+# Crear una imagen vacía más grande para colocar la rotación
+imagen_rotada = np.zeros((alto*2, ancho*2), dtype=np.uint8)
+nuevo_alto, nuevo_ancho = imagen_rotada.shape
+print(f"Tamaño de la imagen rotada: {nuevo_alto}x{nuevo_ancho}")
+
+# Calcular el centro de la nueva imagen
+centro_y, centro_x = nuevo_alto // 2, nuevo_ancho // 2
+
+# --- TRASLADAR IMAGEN ORIGINAL AL CENTRO ---
+for i in range(alto):
+    for j in range(ancho):
+        nueva_x = j + centro_x
+        nueva_y = i + centro_y
+        if 0 <= nueva_x < nuevo_ancho and 0 <= nueva_y < nuevo_alto:
+            imagen_rotada[nueva_y, nueva_x] = imagen[i, j]
+
+# --- MOSTRAR RESULTADOS ---
+cv.imshow('Imagen Original', imagen)
+cv.imshow('Imagen Trasladada al Centro', imagen_rotada)
+
+cv.waitKey(0)
+cv.destroyAllWindows()
